@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="chrome://benchmark/skin/overlay.css" type="text/css"?>
+<overlay id="collector-overlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+  <script type="application/x-javascript" src="chrome://collector/content/collector.js"/>
+
+  <script>
+
+  var isAttached = false;
+
+  function startup() {
+    if (isAttached)
+      return;
+
+    // Get notified when new browser windows open
+    var obs = Components.classes["@mozilla.org/observer-service;1"]
+                        .getService(Components.interfaces.nsIObserverService);
+
+    obs.addObserver(function(window)
+    {
+      isAttached = true;
+      if (this._messageManager) {
+        this._messageManager.loadFrameScript("chrome://collector/content/collector.js", true);
+      }
+    }, "chrome-document-global-created", false);
+  }
+
+
+  startup();
+  </script>
+
+</overlay>
