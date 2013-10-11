@@ -24,8 +24,6 @@ function collectorInit(aWindow) {
     return;
   }
 
-//  dumpLine("Initializing collector: " + win.location);
-
   win.collectorRecord = function () {
     // Start the recording, will issue a reset as well
     win.collectorReset();
@@ -71,8 +69,6 @@ function collectorInit(aWindow) {
     dump(str);
     dump("\n");
   }
-
-//  dumpLine("Initialized collector: " + win.location);
 }
 
 function dumpLine(str) {
