@@ -7,10 +7,16 @@ try {
   if (Cc === undefined) {
     var Cc = Components.classes;
     var Ci = Components.interfaces;
+    var Cu = Components.utils;
   }
 } catch (ex) {}
 
+Cu.import("resource://gre/modules/osfile.jsm");
+Cu.import("resource://gre/modules/Task.jsm");
+Cu.import("resource://services-common/log4moz.js");
+
 var collection = [];
+var logger = null;
 
 function collectorInit(aWindow) {
 
@@ -36,12 +42,13 @@ function collectorInit(aWindow) {
     win.collectorStop();
     collection = [];
 
+    var filename = null;
     try {
-      var prefs = Components.classes['@mozilla.org/preferences-service;1']
-        .getService(Components.interfaces.nsIPrefBranch2);
+      var prefs = Cc['@mozilla.org/preferences-service;1']
+        .getService(Ci.nsIPrefBranch2);
       var filename = prefs.getCharPref('mfl.logfile');
-      MozillaFileLogger.init(filename);
     } catch (ex) {} //pref does not exist
+    logger = initialize_logger(filename);
   }
 
   win.collectorStop = function () {
@@ -52,80 +59,56 @@ function collectorInit(aWindow) {
   win.collectorDump = function () {
     // print out information
     for (var line in collection) {
-      dumpLine(collection[line]);
+      logger.info(collection[line]);
     }
   }
 
   win.collectorGC = function () {
     // do a gc/cc
-    aWindow.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-          .getInterface(Components.interfaces.nsIDOMWindowUtils)
+    aWindow.QueryInterface(Ci.nsIInterfaceRequestor)
+          .getInterface(Ci.nsIDOMWindowUtils)
           .garbageCollect();
   }
-
-  win.dumpLine = function(str) {
-    if (MozillaFileLogger)
-      MozillaFileLogger.log(str + "\n");
-    dump(str);
-    dump("\n");
-  }
 }
-
-function dumpLine(str) {
-  if (MozillaFileLogger)
-    MozillaFileLogger.log(str + "\n");
-  dump(str);
-  dump("\n");
-}
-
 
 
 /** Init the file logger with the absolute path to the file.
     It will create and append if the file already exists **/
 
-var MozillaFileLogger = {};
-MozillaFileLogger.init = function(path) {
-  var FOSTREAM_CID = "@mozilla.org/network/file-output-stream;1";
-  var LF_CID = "@mozilla.org/file/local;1";
-  var PR_WRITE_ONLY   = 0x02;
-  var PR_CREATE_FILE  = 0x08;
-  var PR_APPEND       = 0x10;
-
-  MozillaFileLogger._file = Cc[LF_CID].createInstance(Ci.nsILocalFile);
-  MozillaFileLogger._file.initWithPath(path);
-  MozillaFileLogger._foStream = Cc[FOSTREAM_CID].createInstance(Ci.nsIFileOutputStream);
-  MozillaFileLogger._foStream.init(this._file, PR_WRITE_ONLY | PR_CREATE_FILE | PR_APPEND,
-                                   0664, 0);
-}
-
-MozillaFileLogger.getLogCallback = function() {
-
-  return function (msg) {
-    var data = msg.num + " " + msg.level + " " + msg.info.join(' ') + "\n";
-    if (MozillaFileLogger._foStream)
-      MozillaFileLogger._foStream.write(data, data.length);
-
-    if (data.indexOf("SimpleTest FINISH") >= 0) {
-      MozillaFileLogger.close();
-    }
+var formatter = {
+ format: function format(message) {
+    return message.loggerName + '\t' +
+    message.levelDesc + '\t' +
+    message.message + '\n';
   }
-}
+};
 
-// This is only used from chrome space by the reftest harness
-MozillaFileLogger.log = function(msg) {
-  if (MozillaFileLogger && MozillaFileLogger._foStream) {
-    try {
-      MozillaFileLogger._foStream.write(msg, msg.length);
-    } catch(e) {}
+
+// XXX: bc - monkey patched to change open to not truncate.
+Log4Moz.FileAppender.prototype._openFile = (function () {
+  return Task.spawn(function _openFile() {
+      try {
+        this._file = yield OS.File.open(this._path,
+                                        {truncate: false, write: true});
+      } catch (err) {
+        if (err instanceof OS.File.Error) {
+          this._file = null;
+        } else {
+          throw err;
+        }
+      }
+    }.bind(this));
+  });
+
+function initialize_logger(path) {
+  var logger = Log4Moz.repository.getLogger('collector');
+  var dumpAppender = new Log4Moz.DumpAppender(formatter);
+  logger.addAppender(dumpAppender);
+  if (path) {
+    var fileAppender = new Log4Moz.FileAppender(path, formatter);
+    logger.addAppender(fileAppender);
   }
-}
-
-MozillaFileLogger.close = function() {
-  if(MozillaFileLogger._foStream)
-    MozillaFileLogger._foStream.close();
-  
-  MozillaFileLogger._foStream = null;
-  MozillaFileLogger._file = null;
+  return logger;
 }
 
 // Taken from special powers
