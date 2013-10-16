@@ -1,3 +1,4 @@
+import json
 import time
 from testBenchmark import tBenchmark
 
@@ -6,6 +7,7 @@ class test_twitter(tBenchmark):
     def test_twitter(self):
         self.url = "twitter.com"
         self.name = "twitter"
+        self.credentials = json.loads(open('credentials.json').read())
 
         credentials = None
         try:
