@@ -4,6 +4,7 @@ from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 import unittest
 import sys
 import os
+import json
 
 class tBenchmark(unittest.TestCase):
 
@@ -11,6 +12,13 @@ class tBenchmark(unittest.TestCase):
         self.binary = sys.argv[1]
         self.logFile = sys.argv[2]
         self.profilePath = sys.argv[3]
+
+        self.credentials = {}
+        try:
+            with open(sys.argv[4], 'r') as creds:
+                self.credentials = json.load(creds)
+        except:
+            pass        
 
         if self.profilePath and os.path.exists(self.profilePath):
             self.profile = webdriver.FirefoxProfile(self.profilePath)

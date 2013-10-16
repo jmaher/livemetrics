@@ -5,6 +5,7 @@ import unittest
 from optparse import OptionParser
 import os
 import sys
+import json
 
 class LiveMetricsOptions(OptionParser):
     def __init__(self, **kwargs):
@@ -34,6 +35,12 @@ class LiveMetricsOptions(OptionParser):
                         help="path to the profile to use. "
                              "If none specified, a temporary profile is created")
 
+        self.add_option("-c", "--credentials", action="store",
+                        type="string", dest="credentials",
+                        default=None,
+                        help="path to the json file containing credentials.")
+
+
         usage = """
                 Usage instructions for runlive.py.
                 %prog [options]
@@ -46,16 +53,27 @@ class LiveMetricsOptions(OptionParser):
         """ verify correct options and cleanup paths """
         if options.binary:
             if not os.path.isfile(options.binary):
-                print "error: --binary must specify the path to a browser"
+                print "ERROR: --binary must specify the path to a browser"
                 return None
-        if options.testPath:
-            if not os.path.isdir(options.testPath):
-                print "error: --testPath must specify the path to a directory."
-                return None
+        if not os.path.isdir(options.testPath):
+            print "ERROR: --testPath must specify the path to a directory."
+            return None
         if options.profilePath:
             if not os.path.isdir(options.profilePath):
-                print "error: --profilePath must specify the path to a directory."
+                print "ERROR: --profilePath must specify the path to a directory."
                 return None
+        if options.credentials:
+            if not os.path.isfile(options.credentials):
+                print "ERROR: --credentials must point to a valid file"
+                return None
+            try:
+                with open(options.credentials, 'r') as creds:
+                    c = json.load(creds)
+                site = c['credentials'][0]
+            except:
+                print "ERROR: %s is not a valid json file that we can understand" % options.credentials
+                return None
+
         return options
 
 def main():
@@ -73,7 +91,7 @@ def main():
         for test in options.tests:
             test_modules = unittest.defaultTestLoader.discover(options.testPath, pattern='test_*%s*.py' % test)
             if test_modules.countTestCases() == 0:
-                print "error: test %s not found in these tests %s" % (test, module_strings)
+                print "error: test %s not found in directory %s/test_<name>.py" % (test, options.testPath)
                 return 2
             testSuite.addTests(test_modules)
 
@@ -84,6 +102,7 @@ def main():
     sys.argv.append(options.binary)
     sys.argv.append(options.logFile)
     sys.argv.append(options.profilePath)
+    sys.argv.append(options.credentials)
 
     text_runner = unittest.TextTestRunner().run(testSuite)
 
