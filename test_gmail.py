@@ -8,9 +8,12 @@ class test_gmail(tBenchmark):
         self.name = "gmail"
 
         credentials = None
-        for site in self.credentials["credentials"]:
-            if site["name"] == self.name:
-                credentials = site
+        try:
+            for site in self.credentials["credentials"]:
+                if site["name"] == self.name:
+                    credentials = site
+        except:
+            pass
 
         if not credentials:
             print "ERROR: Unable to run %s test as it requires credentials" % self.name
