@@ -1,4 +1,3 @@
-import json
 import time
 from testBenchmark import tBenchmark
 
@@ -7,7 +6,6 @@ class test_gmail(tBenchmark):
     def test_gmail(self):
         self.url = "mail.google.com"
         self.name = "gmail"
-        self.credentials = json.loads(open('credentials.json').read())
 
         credentials = None
         try:

@@ -18,7 +18,7 @@ class tBenchmark(unittest.TestCase):
             with open(sys.argv[4], 'r') as creds:
                 self.credentials = json.load(creds)
         except:
-            pass        
+            pass
 
         if self.profilePath and os.path.exists(self.profilePath):
             self.profile = webdriver.FirefoxProfile(self.profilePath)
