@@ -1,3 +1,6 @@
+livemetrics.log
+credentials.json
+
 *.py[cod]
 
 # C extensions
