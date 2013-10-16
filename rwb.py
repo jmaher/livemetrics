@@ -11,7 +11,13 @@ class LiveMetricsOptions(OptionParser):
         OptionParser.__init__(self, **kwargs)
         self.add_option("-t", "--test-path",
                         action="store", type="string", dest="testPath",
-                        default=None, help="path to the test manifest")
+                        default='.', help="Path to the test manifest. "
+                        "Defaults to current directory.")
+
+        self.add_option("--test",
+                        action="append", type="string", dest="tests",
+                        default=[], help="Name of test to be included. "
+                        "To include multiple tests, repeat this option.")
 
         self.add_option("-b", "--binary",
                         action="store", type="string", dest="binary",
@@ -38,9 +44,17 @@ class LiveMetricsOptions(OptionParser):
 
     def verifyOptions(self, options):
         """ verify correct options and cleanup paths """
-        if not options.binary:
-            if not os.path.exists(options.binary):
+        if options.binary:
+            if not os.path.isfile(options.binary):
                 print "error: --binary must specify the path to a browser"
+                return None
+        if options.testPath:
+            if not os.path.isdir(options.testPath):
+                print "error: --testPath must specify the path to a directory."
+                return None
+        if options.profilePath:
+            if not os.path.isdir(options.profilePath):
+                print "error: --profilePath must specify the path to a directory."
                 return None
         return options
 
@@ -51,19 +65,17 @@ def main():
     if options == None:
         return 2
 
-    test_file_strings = glob.glob('test_*.py')
-    module_strings = [str[5:len(str)-3] for str in test_file_strings]
-    testsToRun = module_strings
-    if options.testPath:
-        testsToRun = []
-        for test in options.testPath:
-            if test not in module_strings:
+    testSuite = unittest.TestSuite()
+    if len(options.tests) == 0:
+        test_modules = unittest.defaultTestLoader.discover(options.testPath, pattern='test_*.py')
+        testSuite.addTests(test_modules)
+    else:
+        for test in options.tests:
+            test_modules = unittest.defaultTestLoader.discover(options.testPath, pattern='test_*%s*.py' % test)
+            if test_modules.countTestCases() == 0:
                 print "error: test %s not found in these tests %s" % (test, module_strings)
                 return 2
-            testsToRun.append(test)
-
-    suites = [unittest.defaultTestLoader.loadTestsFromName('test_' + str) for str
-              in testsToRun]
+            testSuite.addTests(test_modules)
 
     command_line_args = options
 
@@ -73,7 +85,6 @@ def main():
     sys.argv.append(options.logFile)
     sys.argv.append(options.profilePath)
 
-    testSuite = unittest.TestSuite(suites)
     text_runner = unittest.TextTestRunner().run(testSuite)
 
 if __name__ == "__main__":
