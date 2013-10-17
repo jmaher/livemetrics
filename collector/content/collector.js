@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 20; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2; -*- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -9,11 +9,25 @@ try {
     var Ci = Components.interfaces;
     var Cu = Components.utils;
   }
-} catch (ex) {}
+}
+catch (ex) {
+  dump(ex);
+}
 
 Cu.import("resource://gre/modules/osfile.jsm");
 Cu.import("resource://gre/modules/Task.jsm");
-Cu.import("resource://services-common/log4moz.js");
+
+var LogModule;
+try {
+  Cu.import("resource://gre/modules/Log.jsm");
+  LogModule = Log;
+}
+catch(ex) {
+  // In Firefox < 27, it is a service:
+  // See https://bugzilla.mozilla.org/show_bug.cgi?id=451283.
+  Cu.import("resource://services-common/log4moz.js");
+  LogModule = Log4Moz;
+}
 
 var collection = [];
 var logger = null;
@@ -24,7 +38,7 @@ function collectorInit(aWindow) {
 
   if (!win) {
     return;
-  } 
+  }
 
   if (win.location == '' || win.location == 'about:blank') {
     return;
@@ -85,7 +99,7 @@ var formatter = {
 
 
 // XXX: bc - monkey patched to change open to not truncate.
-Log4Moz.FileAppender.prototype._openFile = (function () {
+LogModule.FileAppender.prototype._openFile = (function () {
   return Task.spawn(function _openFile() {
       try {
         this._file = yield OS.File.open(this._path,
@@ -101,11 +115,13 @@ Log4Moz.FileAppender.prototype._openFile = (function () {
   });
 
 function initialize_logger(path) {
-  var logger = Log4Moz.repository.getLogger('collector');
-  var dumpAppender = new Log4Moz.DumpAppender(formatter);
+  var logger = LogModule.repository.getLogger('collector');
+  var dumpAppender = new LogModule.DumpAppender(formatter);
+  var consoleAppender = new LogModule.ConsoleAppender(formatter);
   logger.addAppender(dumpAppender);
+  logger.addAppender(consoleAppender);
   if (path) {
-    var fileAppender = new Log4Moz.FileAppender(path, formatter);
+    var fileAppender = new LogModule.FileAppender(path, formatter);
     logger.addAppender(fileAppender);
   }
   return logger;
