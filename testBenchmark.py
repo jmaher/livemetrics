@@ -5,6 +5,7 @@ import unittest
 import sys
 import os
 import json
+import time
 
 class tBenchmark(unittest.TestCase):
 
@@ -42,5 +43,5 @@ class tBenchmark(unittest.TestCase):
             self.driver = webdriver.Firefox(firefox_profile=self.profile)
 
     def tearDown(self):
-        self.driver.quit()
+        self.driver.close()
 
