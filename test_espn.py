@@ -18,7 +18,7 @@ class test_espn(tBenchmark):
 
         for i in range(4):
             content.send_keys(' ')
-            time.sleep(0.5)
+            time.sleep(1.5)
 
         self.driver.execute_script("collectorStop();")
         self.driver.execute_script("collectorDump();")

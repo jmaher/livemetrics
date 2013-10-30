@@ -8,8 +8,11 @@ class test_yahoo(tBenchmark):
         self.driver.execute_script("collectorRecord();")
 
         try:
+            time.sleep(2.0)
             self.driver.find_element_by_link_text('News').click()
+            time.sleep(2.0)
             self.driver.find_element_by_link_text('World').click()
+            time.sleep(2.0)
             content = self.driver.find_element_by_id('yog-bd')
         except:
             print "ERROR: didn't find main page element for %s" % self.url
@@ -17,7 +20,7 @@ class test_yahoo(tBenchmark):
 
         for i in range(10):
             content.send_keys(' ')
-            time.sleep(0.5)
+            time.sleep(1.5)
 
         self.driver.execute_script("collectorStop();")
         self.driver.execute_script("collectorDump();")

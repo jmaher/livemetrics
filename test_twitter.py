@@ -32,12 +32,15 @@ class test_twitter(tBenchmark):
             print "ERROR: didn't find login form on: %s" % self.url
             return
 
+        time.sleep(2.0)
         username = self.driver.find_element_by_id('signin-email')
         username.send_keys(credentials['username'])
 
+        time.sleep(2.0)
         password = self.driver.find_element_by_id('signin-password')
         password.send_keys(credentials['password'])
 
+        time.sleep(2.0)
         self.driver.find_element_by_class_name("primary-btn").click()
 
         #TODO: navigate around the site a bit, lots of clicking

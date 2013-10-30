@@ -26,14 +26,18 @@ class test_gmail(tBenchmark):
         self.driver.get("https://%s" % self.url)
         self.driver.execute_script("collectorRecord();")
 
-        self.driver.find_element_by_link_text('Sign in').click()
+        elem = self.driver.find_element_by_link_text('Sign in')
+        elem.click()
 
+        time.sleep(2.0)
         username = self.driver.find_element_by_id('Email')
         username.send_keys(credentials['username'])
 
+        time.sleep(2.0)
         password = self.driver.find_element_by_id('Passwd')
         password.send_keys(credentials['password'])
 
+        time.sleep(2.0)
         self.driver.find_element_by_id("signIn").click()
 
         time.sleep(3)

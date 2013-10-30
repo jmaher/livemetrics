@@ -16,7 +16,7 @@ class test_cnn(tBenchmark):
 
         for i in range(10):
             content.send_keys(' ')
-            time.sleep(0.5)
+            time.sleep(1.5)
 
         self.driver.execute_script("collectorStop();")
         self.driver.execute_script("collectorDump();")
