@@ -77,7 +77,24 @@ class LiveMetricsOptions(argparse.ArgumentParser):
                 print "ERROR: %s is not a valid json file that we can understand" % options.credentials
                 return None
 
+        if options.wrapper and options.wrapperArgs:
+           if not os.path.isfile(options.wrapper):
+                print "ERROR: --wrapper must point to a valid binary"
+                return None
         return options
+
+def createWrapper(options, logfile):
+    shellscript = 'wrapper.cmd'
+    if options.wrapper and options.wrapperArgs:
+        if options.binary is not shellscript:
+            options.rawBinary = options.binary
+        wrapperArgs = options.wrapperArgs.replace('{log}', "wrapped.%s"  % logfile)
+        wrapperArgs = wrapperArgs.replace('{binary}', options.rawBinary)
+
+        #NOTE: this only works on windows
+        with open(shellscript, 'w') as pf:
+            pf.write('"%s" %s' % (options.wrapper, wrapperArgs))
+        options.binary = shellscript
 
 def main():
     parser = LiveMetricsOptions()
@@ -106,6 +123,7 @@ def main():
     while (iter < options.iterations):
         iter += 1
         logFile = "%s-%s.%s" % (logname, iter, logext)
+        createWrapper(options, logFile)
         #HACK: the test case in setUp() will parse sys.argv[1:], so we define our args
         del sys.argv[1:]
         sys.argv.append(options.binary)
