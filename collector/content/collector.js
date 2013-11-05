@@ -47,6 +47,11 @@ function collectorInit(aWindow) {
   win.collectorRecord = function () {
     // Start the recording, will issue a reset as well
     win.collectorReset();
+    try {
+      Cu.startMeasuring();
+    } catch(ex) {
+       dump("WARNING: unable to startMeasuring on the JS Engine, this build probably doesn't support it\n");
+    }
     collection.push(new Date() + " Starting Collector: " + win.location);
   }
 
@@ -67,6 +72,10 @@ function collectorInit(aWindow) {
 
   win.collectorStop = function () {
     // Stop the recording module
+    try {
+      let jsval = Cu.getCurrentMeasurements();
+      collection.push("JS parsing time: " + jsval.parseTime);
+    } catch(ex) {}
     collection.push(new Date() + " Terminating Collector");
   }
 
