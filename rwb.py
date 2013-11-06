@@ -1,11 +1,14 @@
+import argparse
+import ConfigParser
+import glob
+import os
+import re
+import shlex
+import sys
+import unittest
+
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-import glob
-import unittest
-import argparse
-import os
-import sys
-import json
 
 class LiveMetricsOptions(argparse.ArgumentParser):
     def __init__(self, **kwargs):
@@ -41,18 +44,32 @@ class LiveMetricsOptions(argparse.ArgumentParser):
         self.add_argument("--configFile", action="store", default=None,
                         help="Filename which contains all the commandline options.")
 
+    def overloadWithConfig(self, options, filename):
+        try:
+            config = ConfigParser.ConfigParser()
+            config.read([options.configFile])
+        except Exception, e:
+            print "ERROR: config file %s is not a valid ini file" % options.configFile
+            raise
+
+        opts = argparse.Namespace()
+        args = vars(options)
+        for item in args:
+            try:
+                cfgitem = config.get('livemetrics', item)
+                if item == 'tests':
+                    cfgitem = [x.strip() for x in cfgitem.split(',')]
+                    print cfgitem
+            except:
+                cfgitem = args[item]
+            setattr(opts, item, cfgitem)
+        return opts
+
     def verifyOptions(self, options):
         """ verify correct options and cleanup paths """
-        if options.configFile and os.file.exists(configFile):
-            try:
-                with open(options.configFile, 'r') as config:
-                    c = json.load(config)
-                for option in options:
-                    if option in c:
-                        options.option = c.option
-            except:
-                print "ERROR: config file %s is not a valid json file" % options.configFile
-                return None
+        if options.configFile and os.path.exists(options.configFile):
+            options = self.overloadWithConfig(options, options.configFile)
+            print options
 
         if options.binary:
             if not os.path.isfile(options.binary):
@@ -65,22 +82,12 @@ class LiveMetricsOptions(argparse.ArgumentParser):
             if not os.path.isdir(options.profilePath):
                 print "ERROR: --profilePath must specify the path to a directory."
                 return None
-        if options.credentials:
-            if not os.path.isfile(options.credentials):
-                print "ERROR: --credentials must point to a valid file"
-                return None
-            try:
-                with open(options.credentials, 'r') as creds:
-                    c = json.load(creds)
-                site = c['credentials'][0]
-            except:
-                print "ERROR: %s is not a valid json file that we can understand" % options.credentials
-                return None
-
         if options.wrapper and options.wrapperArgs:
            if not os.path.isfile(options.wrapper):
                 print "ERROR: --wrapper must point to a valid binary"
                 return None
+
+        options.iterations = int(options.iterations)
         return options
 
 def createWrapper(options, logfile):
@@ -96,11 +103,12 @@ def createWrapper(options, logfile):
             pf.write('"%s" %s' % (options.wrapper, wrapperArgs))
         options.binary = shellscript
 
-def getTestName(unittest):
+def getTestName(filename):
     testname = ''
-    for item in unittest:
-        for i in item:
-            testname = i.__class__.__name__
+    #TODO: make this more robust
+    testre = re.compile('test_(.*).py')
+    m = testre.match(filename)
+    testname = m.group(1)
     return testname
 
 def main():
@@ -112,13 +120,11 @@ def main():
 
     test_modules = None
     if len(options.tests) == 0:
-        test_modules = unittest.defaultTestLoader.discover(options.testPath, pattern='test_*.py')
+        test_files = glob.glob('test_*.py')
     else:
+        test_files = []
         for test in options.tests:
-            test_modules = unittest.defaultTestLoader.discover(options.testPath, pattern='test_*%s*.py' % test)
-            if test_modules.countTestCases() == 0:
-                print "ERROR: test %s not found in directory %s/test_<name>.py" % (test, options.testPath)
-                return 2
+            test_files.append("test_%s.py" % test)
 
     iter = 0
     logname = '.'.join(options.logFile.split('.')[0:-1])
@@ -126,10 +132,11 @@ def main():
     while (iter < options.iterations):
         iter += 1
 
-        for test in test_modules:
+        for test in test_files:
             testname = getTestName(test)
             logFile = "%s-%s-%s.%s" % (logname, testname, iter, logext)
             createWrapper(options, logFile)
+            print logFile
 
             #HACK: the test case in setUp() will parse sys.argv[1:], so we define our args
             del sys.argv[1:]
@@ -138,8 +145,8 @@ def main():
             sys.argv.append(options.profilePath)
             sys.argv.append(options.credentials)
 
-            testSuite = unittest.TestSuite()
-            testSuite.addTests(test)
+            suites = [unittest.defaultTestLoader.loadTestsFromName('test_%s' % testname)]
+            testSuite = unittest.TestSuite(suites)
             text_runner = unittest.TextTestRunner().run(testSuite)
 
 if __name__ == "__main__":
