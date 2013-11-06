@@ -56,10 +56,9 @@ class LiveMetricsOptions(argparse.ArgumentParser):
         args = vars(options)
         for item in args:
             try:
-                cfgitem = config.get('livemetrics', item)
+                cfgitem = config.get('livemetrics', item).replace('\\', '\\\\')
                 if item == 'tests':
                     cfgitem = [x.strip() for x in cfgitem.split(',')]
-                    print cfgitem
             except:
                 cfgitem = args[item]
             setattr(opts, item, cfgitem)
@@ -69,7 +68,6 @@ class LiveMetricsOptions(argparse.ArgumentParser):
         """ verify correct options and cleanup paths """
         if options.configFile and os.path.exists(options.configFile):
             options = self.overloadWithConfig(options, options.configFile)
-            print options
 
         if options.binary:
             if not os.path.isfile(options.binary):
@@ -136,7 +134,6 @@ def main():
             testname = getTestName(test)
             logFile = "%s-%s-%s.%s" % (logname, testname, iter, logext)
             createWrapper(options, logFile)
-            print logFile
 
             #HACK: the test case in setUp() will parse sys.argv[1:], so we define our args
             del sys.argv[1:]
