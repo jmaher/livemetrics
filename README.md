@@ -13,5 +13,5 @@ TODO Items:
 * instrument the test cases to have better markers/logging
 * write a simple test case guide/example
 * create a setup.py which will ensure requirements are met
-* fully implement a wrapper solution so we can collect power measurements
-
+* write post test log parsers
+* support a config file of common options

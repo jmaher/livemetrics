@@ -96,6 +96,13 @@ def createWrapper(options, logfile):
             pf.write('"%s" %s' % (options.wrapper, wrapperArgs))
         options.binary = shellscript
 
+def getTestName(unittest):
+    testname = ''
+    for item in unittest:
+        for i in item:
+            testname = i.__class__.__name__
+    return testname
+
 def main():
     parser = LiveMetricsOptions()
     args = parser.parse_args()
@@ -103,35 +110,37 @@ def main():
     if options is None:
         return 2
 
-    testSuite = unittest.TestSuite()
+    test_modules = None
     if len(options.tests) == 0:
         test_modules = unittest.defaultTestLoader.discover(options.testPath, pattern='test_*.py')
-        testSuite.addTests(test_modules)
     else:
         for test in options.tests:
             test_modules = unittest.defaultTestLoader.discover(options.testPath, pattern='test_*%s*.py' % test)
             if test_modules.countTestCases() == 0:
-                print "error: test %s not found in directory %s/test_<name>.py" % (test, options.testPath)
+                print "ERROR: test %s not found in directory %s/test_<name>.py" % (test, options.testPath)
                 return 2
-            testSuite.addTests(test_modules)
-
-    command_line_args = options
 
     iter = 0
     logname = '.'.join(options.logFile.split('.')[0:-1])
     logext = options.logFile.split('.')[-1]
     while (iter < options.iterations):
         iter += 1
-        logFile = "%s-%s.%s" % (logname, iter, logext)
-        createWrapper(options, logFile)
-        #HACK: the test case in setUp() will parse sys.argv[1:], so we define our args
-        del sys.argv[1:]
-        sys.argv.append(options.binary)
-        sys.argv.append(logFile)
-        sys.argv.append(options.profilePath)
-        sys.argv.append(options.credentials)
 
-        text_runner = unittest.TextTestRunner().run(testSuite)
+        for test in test_modules:
+            testname = getTestName(test)
+            logFile = "%s-%s-%s.%s" % (logname, testname, iter, logext)
+            createWrapper(options, logFile)
+
+            #HACK: the test case in setUp() will parse sys.argv[1:], so we define our args
+            del sys.argv[1:]
+            sys.argv.append(options.binary)
+            sys.argv.append(logFile)
+            sys.argv.append(options.profilePath)
+            sys.argv.append(options.credentials)
+
+            testSuite = unittest.TestSuite()
+            testSuite.addTests(test)
+            text_runner = unittest.TextTestRunner().run(testSuite)
 
 if __name__ == "__main__":
     main()

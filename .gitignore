@@ -1,4 +1,4 @@
-livemetrics.log
+*.log
 credentials.json
 
 *.py[cod]
