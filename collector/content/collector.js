@@ -16,6 +16,7 @@ catch (ex) {
 
 Cu.import("resource://gre/modules/osfile.jsm");
 Cu.import("resource://gre/modules/Task.jsm");
+Cu.import("resource://gre/modules/Services.jsm");
 
 var LogModule;
 try {
@@ -30,6 +31,7 @@ catch(ex) {
 }
 
 var collection = [];
+var events = {};
 var logger = null;
 
 function collectorInit(aWindow) {
@@ -52,7 +54,7 @@ function collectorInit(aWindow) {
     } catch(ex) {
        dump("WARNING: unable to startMeasuring on the JS Engine, this build probably doesn't support it\n");
     }
-    collection.push(new Date() + " Starting Collector: " + win.location);
+    collection.push(new Date().getTime() + " Starting Collector: " + win.location);
   }
 
 
@@ -76,7 +78,10 @@ function collectorInit(aWindow) {
       let jsval = Cu.getCurrentMeasurements();
       collection.push("JS parsing time: " + jsval.parseTime);
     } catch(ex) {}
-    collection.push(new Date() + " Terminating Collector");
+    for (event in events) {
+      collection.push(events[event] + " " + event);
+    }
+    collection.push(new Date().getTime() + " Terminating Collector");
   }
 
   win.collectorDump = function () {
@@ -155,4 +160,9 @@ CollectorManager.prototype = {
 };
 
 var collectormanager = new CollectorManager();
+
+Services.obs.addObserver(function observer(aSubject, aTopic) {
+  Services.obs.removeObserver(observer, aTopic);
+  events['browser-delayed-startup-finished'] = new Date().getTime()
+}, "browser-delayed-startup-finished", false);
 
