@@ -7,7 +7,7 @@ class test_idle(tBenchmark):
         self.driver.get(self.url)
         self.driver.execute_script("collectorRecord();")
 
-        time.sleep(30.0)
+        time.sleep(20.0)
 
         self.driver.execute_script("collectorStop();")
         self.driver.execute_script("collectorDump();")
