@@ -2,7 +2,8 @@
 logFile = lm.log
 credentials = credentials.json
 iterations = 5
-wrapper = c:\program files\intel\power log 2.7\powerlog2.7.exe
+wrapper = c:\Program Files\Intel\Power Gadget 2.7\PowerLog2.7.exe
+binary = c:\Program Files (x86)\Mozilla Firefox\firefox.exe
 wrapperArgs = -file {log} -cmd {binary} %*
 tests = espn, gmail, idle
 
