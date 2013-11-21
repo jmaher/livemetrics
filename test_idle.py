@@ -9,6 +9,7 @@ class test_idle(tBenchmark):
 
         time.sleep(30.0)
 
+        self.driver.execute_script("collectorLog('stopping script');")
         self.driver.execute_script("collectorStop();")
         self.driver.execute_script("collectorDump();")
 

@@ -58,6 +58,10 @@ function collectorInit(aWindow) {
   }
 
 
+  win.collectorLog = function (msg) {
+    collection.push(new Date().getTime() + " User Message: " + msg);
+  }
+
   win.collectorReset = function () {
     // Reset the recording module, issues a stop
     win.collectorStop();
